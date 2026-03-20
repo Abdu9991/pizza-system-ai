@@ -139,5 +139,5 @@ def recommend(request: RecommendationRequest) -> RecommendationResponse:
 def serve() -> None:
     import uvicorn
 
-    port = int(os.getenv("PORT", "8000"))
+    port = int(os.getenv("PORT", "8082"))
     uvicorn.run("pizza_app.api:app", host="0.0.0.0", port=port)

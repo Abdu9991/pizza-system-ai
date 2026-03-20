@@ -43,7 +43,7 @@ To run this project on Render as a web service, use these commands:
 
 ```bash
 Build Command: pip install --upgrade pip && pip install .
-Start Command: python -m uvicorn pizza_app.api:app --host 0.0.0.0 --port $PORT
+Start Command: python -m uvicorn pizza_app.api:app --host 0.0.0.0 --port 8082
 ```
 
 After deployment, Render can use these endpoints:
