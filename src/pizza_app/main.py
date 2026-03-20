@@ -1,94 +1,45 @@
 #!/usr/bin/env python
-import sys
-import warnings
-
+import os
+import uvicorn
+from fastapi import FastAPI, HTTPException
 from datetime import datetime
-
 from pizza_app.crew import PizzaApp
 
-warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
+app = FastAPI(title="Pizza AI Ordering System")
 
-# This main file is intended to be a way for you to run your
-# crew locally, so refrain from adding unnecessary logic into this file.
-# Replace with inputs you want to test with, it will automatically
-# interpolate any tasks and agents information
+@app.get("/")
+def health_check():
+    return {"status": "active", "service": "PizzaApp Crew"}
 
-def run():
+@app.get("/order")
+def run_order(customer_request: str):
     """
-    Run the crew.
+    Production endpoint to trigger the crew via URL.
+    Example: /order?customer_request=2 large pepperoni pizzas
     """
     inputs = {
-        'topic': 'AI LLMs',
+        'customer_request': customer_request,
         'current_year': str(datetime.now().year)
     }
 
     try:
-        PizzaApp().crew().kickoff(inputs=inputs)
-    except Exception as e:
-        raise Exception(f"An error occurred while running the crew: {e}")
-
-
-def train():
-    """
-    Train the crew for a given number of iterations.
-    """
-    inputs = {
-        "topic": "AI LLMs",
-        'current_year': str(datetime.now().year)
-    }
-    try:
-        PizzaApp().crew().train(n_iterations=int(sys.argv[1]), filename=sys.argv[2], inputs=inputs)
-
-    except Exception as e:
-        raise Exception(f"An error occurred while training the crew: {e}")
-
-def replay():
-    """
-    Replay the crew execution from a specific task.
-    """
-    try:
-        PizzaApp().crew().replay(task_id=sys.argv[1])
-
-    except Exception as e:
-        raise Exception(f"An error occurred while replaying the crew: {e}")
-
-def test():
-    """
-    Test the crew execution and returns the results.
-    """
-    inputs = {
-        "topic": "AI LLMs",
-        "current_year": str(datetime.now().year)
-    }
-
-    try:
-        PizzaApp().crew().test(n_iterations=int(sys.argv[1]), eval_llm=sys.argv[2], inputs=inputs)
-
-    except Exception as e:
-        raise Exception(f"An error occurred while testing the crew: {e}")
-
-def run_with_trigger():
-    """
-    Run the crew with trigger payload.
-    """
-    import json
-
-    if len(sys.argv) < 2:
-        raise Exception("No trigger payload provided. Please provide JSON payload as argument.")
-
-    try:
-        trigger_payload = json.loads(sys.argv[1])
-    except json.JSONDecodeError:
-        raise Exception("Invalid JSON payload provided as argument")
-
-    inputs = {
-        "crewai_trigger_payload": trigger_payload,
-        "topic": "",
-        "current_year": ""
-    }
-
-    try:
+        # Kickoff the crew and return the result as JSON
         result = PizzaApp().crew().kickoff(inputs=inputs)
-        return result
+        return {"recommendation": str(result)}
     except Exception as e:
-        raise Exception(f"An error occurred while running the crew with trigger: {e}")
+        raise HTTPException(status_code=500, detail=f"Crew execution failed: {e}")
+
+# Keep your original CLI 'run' logic for local testing
+def run():
+    inputs = {
+        'customer_request': 'I want 2 large pepperoni pizzas',
+        'current_year': str(datetime.now().year)
+    }
+    PizzaApp().crew().kickoff(inputs=inputs)
+
+# Entry point for Render/Production
+if __name__ == "__main__":
+    # Render provides a $PORT environment variable
+    port = int(os.environ.get("PORT", 8000))
+    # Run the web server
+    uvicorn.run(app, host="0.0.0.0", port=port)
