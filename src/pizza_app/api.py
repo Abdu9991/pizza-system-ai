@@ -8,12 +8,9 @@ from pydantic import BaseModel, Field
 
 load_dotenv()  # loads .env file when present (local dev); no-op when env vars are set directly (Render)
 
-if not os.getenv("OPENAI_API_KEY"):
-    raise RuntimeError(
-        "OPENAI_API_KEY is not set. "
-        "Add it to your .env file for local development, "
-        "or set it as an environment variable on your hosting platform."
-    )
+
+def has_openai_api_key() -> bool:
+  return bool(os.getenv("OPENAI_API_KEY"))
 
 logger = logging.getLogger("pizza_api")
 
@@ -299,12 +296,24 @@ def home() -> str:
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, str | bool]:
+  return {
+    "status": "ok" if has_openai_api_key() else "degraded",
+    "openai_api_key_configured": has_openai_api_key(),
+  }
 
 
 @app.post("/recommend", response_model=RecommendationResponse)
 def recommend(request: RecommendationRequest) -> RecommendationResponse:
+  if not has_openai_api_key():
+    raise HTTPException(
+      status_code=503,
+      detail=(
+        "OPENAI_API_KEY is not set. Add it to your .env file for local development, "
+        "or set it as an environment variable on your hosting platform."
+      ),
+    )
+
     try:
         recommendation = get_pizza_recommendation(request.customer_request)
     except ValueError as exc:
