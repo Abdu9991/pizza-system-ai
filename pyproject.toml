@@ -5,7 +5,9 @@ description = "pizza_app using crewAI"
 authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.10,<3.14"
 dependencies = [
-    "crewai[tools]==1.11.0"
+    "crewai[tools]==1.11.0",
+    "fastapi>=0.116.1,<1.0.0",
+    "uvicorn>=0.35.0,<1.0.0"
 ]
 
 [project.scripts]
@@ -15,6 +17,7 @@ train = "pizza_app.main:train"
 replay = "pizza_app.main:replay"
 test = "pizza_app.main:test"
 run_with_trigger = "pizza_app.main:run_with_trigger"
+serve = "pizza_app.api:serve"
 
 [build-system]
 requires = ["hatchling"]

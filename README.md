@@ -37,6 +37,22 @@ $ crewai run
 
 This command initializes the pizza_app Crew, assembling the agents and assigning them tasks as defined in your configuration.
 
+## Render Web Service
+
+To run this project on Render as a web service, use these commands:
+
+```bash
+Build Command: pip install uv && uv sync
+Start Command: uv run serve
+```
+
+After deployment, Render can use these endpoints:
+
+```text
+GET /health
+POST /recommend
+```
+
 This example, unmodified, will run the create a `report.md` file with the output of a research on LLMs in the root folder.
 
 ## Understanding Your Crew

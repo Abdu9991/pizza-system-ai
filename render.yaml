@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: pizza-system-ai
+    runtime: python
+    plan: free
+    buildCommand: pip install uv && uv sync
+    startCommand: uv run serve
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
