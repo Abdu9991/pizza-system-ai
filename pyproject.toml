@@ -1,0 +1,24 @@
+[project]
+name = "pizza_app"
+version = "0.1.0"
+description = "pizza_app using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[tools]==1.11.0"
+]
+
+[project.scripts]
+pizza_app = "pizza_app.main:run"
+run_crew = "pizza_app.main:run"
+train = "pizza_app.main:train"
+replay = "pizza_app.main:replay"
+test = "pizza_app.main:test"
+run_with_trigger = "pizza_app.main:run_with_trigger"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"
