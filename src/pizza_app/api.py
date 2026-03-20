@@ -1,9 +1,19 @@
 import logging
 import os
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
+
+load_dotenv()  # loads .env file when present (local dev); no-op when env vars are set directly (Render)
+
+if not os.getenv("OPENAI_API_KEY"):
+    raise RuntimeError(
+        "OPENAI_API_KEY is not set. "
+        "Add it to your .env file for local development, "
+        "or set it as an environment variable on your hosting platform."
+    )
 
 logger = logging.getLogger("pizza_api")
 
