@@ -1,87 +1,34 @@
-name: Build and Deploy to GKE
+name: Deploy to Render
 
 on:
   push:
     branches:
-      - blog  # Trigger only when you push to the blog branch
-
-env:
-  PROJECT_ID: your-google-project-id
-  GKE_CLUSTER: your-cluster-name
-  GKE_ZONE: us-central1-a
-  IMAGE: pizza-ai-app
-  GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-  GCP_WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
-  GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      - blog
+  workflow_dispatch:
 
 jobs:
-  setup-build-publish-deploy:
-    name: Setup, Build, Publish, and Deploy
+  deploy:
+    name: Trigger Render Deploy
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Validate Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets['RENDER_DEPLOY_HOOK_URL'] }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Missing required secret: RENDER_DEPLOY_HOOK_URL"
+            exit 1
+          fi
 
-    # 1. Validate and authenticate with Google Cloud
-    - name: Validate GCP auth configuration
-      run: |
-        has_sa_key=false
-        has_wif=false
+      - name: Trigger Render deployment
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets['RENDER_DEPLOY_HOOK_URL'] }}
+        run: |
+          status_code=$(curl -sS -o /tmp/render-response.txt -w "%{http_code}" -X POST "$RENDER_DEPLOY_HOOK_URL")
+          cat /tmp/render-response.txt
 
-        if [ -n "$GCP_SA_KEY" ]; then
-          has_sa_key=true
-        fi
-
-        if [ -n "$GCP_WIF_PROVIDER" ] && [ -n "$GCP_SERVICE_ACCOUNT" ]; then
-          has_wif=true
-        fi
-
-        if [ "$has_sa_key" = true ] && [ "$has_wif" = true ]; then
-          echo "Configure exactly one auth method: either GCP_SA_KEY OR (GCP_WIF_PROVIDER + GCP_SERVICE_ACCOUNT)."
-          exit 1
-        fi
-
-        if [ "$has_sa_key" = false ] && [ "$has_wif" = false ]; then
-          echo "No GCP auth method configured. Set GCP_SA_KEY or set both GCP_WIF_PROVIDER and GCP_SERVICE_ACCOUNT."
-          echo "If this run came from a fork/Dependabot, GitHub does not expose repository secrets by default."
-          exit 1
-        fi
-
-    - id: auth-sa
-      if: env.GCP_SA_KEY != ''
-      uses: 'google-github-actions/auth@v2'
-      with:
-        credentials_json: '${{ env.GCP_SA_KEY }}'
-
-    - id: auth-wif
-      if: env.GCP_WIF_PROVIDER != '' && env.GCP_SERVICE_ACCOUNT != ''
-      uses: 'google-github-actions/auth@v2'
-      with:
-        workload_identity_provider: '${{ env.GCP_WIF_PROVIDER }}'
-        service_account: '${{ env.GCP_SERVICE_ACCOUNT }}'
-
-    # 2. Configure Docker to use gcloud as a credential helper
-    - name: Configure Docker
-      run: |-
-        gcloud auth configure-docker
-
-    # 3. Build the Docker image
-    - name: Build
-      run: |-
-        docker build \
-          --tag "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA" \
-          .
-
-    # 4. Push the Docker image to Google Container Registry
-    - name: Publish
-      run: |-
-        docker push "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA"
-
-    # 5. Deploy the Docker image to the GKE cluster
-    - name: Deploy
-      run: |-
-        # Use sed to replace the image placeholder in your deployment.yaml
-        sed -i "s|image:.*|image: gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA|g" deployment.yaml
-        kubectl apply -f deployment.yaml
-        kubectl rollout status deployment/pizza-app-deployment
+          if [ "$status_code" -lt 200 ] || [ "$status_code" -ge 300 ]; then
+            echo "Render deploy hook failed with HTTP status: $status_code"
+            exit 1
+          fi
