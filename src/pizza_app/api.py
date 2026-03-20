@@ -1,8 +1,11 @@
+import logging
 import os
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger("pizza_api")
 
 from pizza_app.service import get_pizza_recommendation
 
@@ -297,7 +300,8 @@ def recommend(request: RecommendationRequest) -> RecommendationResponse:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="Failed to generate recommendation") from exc
+        logger.exception("Recommendation failed")
+        raise HTTPException(status_code=500, detail=f"Failed to generate recommendation: {exc}") from exc
 
     return RecommendationResponse(recommendation=recommendation)
 
