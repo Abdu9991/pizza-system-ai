@@ -11,3 +11,5 @@ services:
         value: 8082
       - key: PYTHON_VERSION
         value: 3.12.8
+      - key: OPENAI_API_KEY
+        sync: false
