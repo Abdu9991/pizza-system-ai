@@ -3,7 +3,7 @@ name: Build and Deploy to GKE
 on:
   push:
     branches:
-      - main  # Trigger only when you push to the main branch
+      - blog  # Trigger only when you push to the blog branch
 
 env:
   PROJECT_ID: your-google-project-id
