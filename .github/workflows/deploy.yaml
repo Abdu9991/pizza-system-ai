@@ -10,6 +10,9 @@ env:
   GKE_CLUSTER: your-cluster-name
   GKE_ZONE: us-central1-a
   IMAGE: pizza-ai-app
+  GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+  GCP_WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
+  GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
 jobs:
   setup-build-publish-deploy:
@@ -20,11 +23,43 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    # 1. Authenticate with Google Cloud
-    - id: 'auth'
+    # 1. Validate and authenticate with Google Cloud
+    - name: Validate GCP auth configuration
+      run: |
+        has_sa_key=false
+        has_wif=false
+
+        if [ -n "$GCP_SA_KEY" ]; then
+          has_sa_key=true
+        fi
+
+        if [ -n "$GCP_WIF_PROVIDER" ] && [ -n "$GCP_SERVICE_ACCOUNT" ]; then
+          has_wif=true
+        fi
+
+        if [ "$has_sa_key" = true ] && [ "$has_wif" = true ]; then
+          echo "Configure exactly one auth method: either GCP_SA_KEY OR (GCP_WIF_PROVIDER + GCP_SERVICE_ACCOUNT)."
+          exit 1
+        fi
+
+        if [ "$has_sa_key" = false ] && [ "$has_wif" = false ]; then
+          echo "No GCP auth method configured. Set GCP_SA_KEY or set both GCP_WIF_PROVIDER and GCP_SERVICE_ACCOUNT."
+          echo "If this run came from a fork/Dependabot, GitHub does not expose repository secrets by default."
+          exit 1
+        fi
+
+    - id: auth-sa
+      if: env.GCP_SA_KEY != ''
       uses: 'google-github-actions/auth@v2'
       with:
-        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+        credentials_json: '${{ env.GCP_SA_KEY }}'
+
+    - id: auth-wif
+      if: env.GCP_WIF_PROVIDER != '' && env.GCP_SERVICE_ACCOUNT != ''
+      uses: 'google-github-actions/auth@v2'
+      with:
+        workload_identity_provider: '${{ env.GCP_WIF_PROVIDER }}'
+        service_account: '${{ env.GCP_SERVICE_ACCOUNT }}'
 
     # 2. Configure Docker to use gcloud as a credential helper
     - name: Configure Docker
