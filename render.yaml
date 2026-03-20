@@ -3,8 +3,8 @@ services:
     name: pizza-system-ai
     runtime: python
     plan: free
-    buildCommand: pip install uv && uv sync
-    startCommand: uv run serve
+    buildCommand: pip install --upgrade pip && pip install .
+    startCommand: python -m uvicorn pizza_app.api:app --host 0.0.0.0 --port $PORT
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION

@@ -42,8 +42,8 @@ This command initializes the pizza_app Crew, assembling the agents and assigning
 To run this project on Render as a web service, use these commands:
 
 ```bash
-Build Command: pip install uv && uv sync
-Start Command: uv run serve
+Build Command: pip install --upgrade pip && pip install .
+Start Command: python -m uvicorn pizza_app.api:app --host 0.0.0.0 --port $PORT
 ```
 
 After deployment, Render can use these endpoints:
